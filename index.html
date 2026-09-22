@@ -1,0 +1,2061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="SnapEdge AI — live NFL and college football dashboard with verified data, standings, game details, and statistical game analysis.">
+<meta name="theme-color" content="#0b0c0e">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23b6ff2e'/%3E%3Ctext x='16' y='23' font-family='Arial,sans-serif' font-size='19' font-weight='800' text-anchor='middle' fill='%230b0c0e'%3ES%3C/text%3E%3C/svg%3E">
+<title>SnapEdge AI — Sports Dashboard</title>
+<style>
+  :root {
+    --bg: #0b0c0e;
+    --surface: #15171b;
+    --surface-2: #1b1e24;
+    --border: #272b33;
+    --text: #edf0f4;
+    --muted: #97a0ab;
+    --lime: #b6ff2e;
+    --lime-soft: rgba(182, 255, 46, 0.1);
+    --red: #ff6161;
+    --red-soft: rgba(255, 97, 97, 0.12);
+    --amber: #ffc247;
+    --amber-soft: rgba(255, 194, 71, 0.12);
+    --radius: 12px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+  ::selection { background: var(--lime); color: #000; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(11, 12, 14, 0.94);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 0 rgba(182, 255, 46, 0.25);
+  }
+  .topbar-inner {
+    max-width: 1200px; margin: 0 auto; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
+  .brand-mark {
+    width: 32px; height: 32px; border-radius: 8px; flex: none;
+    background: linear-gradient(135deg, #c8ff45, #9df01a);
+    color: #0b0c0e; font-weight: 800; font-size: 1.05rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 14px rgba(182, 255, 46, 0.35);
+  }
+  .brand-text { font-weight: 800; font-size: 1.15rem; letter-spacing: -0.01em; }
+  .brand-ai { color: var(--lime); margin-left: 4px; }
+  .top-status { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    font-size: 0.75rem; color: var(--muted);
+    border: 1px solid var(--border); background: var(--surface);
+    padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .chip strong { color: var(--text); font-weight: 600; }
+  .chip strong.ok { color: var(--lime); }
+
+  /* ---------- Nav ---------- */
+  .mainnav {
+    max-width: 1200px; margin: 0 auto; padding: 0 24px;
+    display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+  }
+  .mainnav::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font: inherit; font-weight: 600; font-size: 0.92rem;
+    padding: 12px 14px; border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  .nav-btn:hover { color: var(--text); }
+  .nav-btn.active { color: var(--lime); border-bottom-color: var(--lime); }
+
+  /* ---------- Layout ---------- */
+  main { max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px; }
+  .page { display: none; }
+  .page.active { display: flex; flex-direction: column; gap: 16px; }
+  .page-head h2 { font-size: 1.5rem; letter-spacing: -0.01em; }
+  .page-head p { color: var(--muted); margin-top: 4px; max-width: 720px; }
+  .page-head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
+
+  /* ---------- Home ---------- */
+  .hero h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); line-height: 1.2; letter-spacing: -0.02em; margin-top: 8px; }
+  .accent { color: var(--lime); }
+  .kicker { color: var(--lime); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.18em; }
+  .lede { color: var(--muted); margin-top: 12px; max-width: 640px; }
+  .status-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 18px; }
+  .status-item { font-size: 0.85rem; color: var(--muted); }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #5a6270; display: inline-block; margin-right: 8px;
+  }
+  .dot.on { background: var(--lime); box-shadow: 0 0 8px rgba(182, 255, 46, 0.6); }
+  .hero .btn { margin-top: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .feature h3 { font-size: 1rem; }
+  .feature p { color: var(--muted); font-size: 0.88rem; margin-top: 8px; }
+  .feature .btn { margin-top: 14px; }
+
+  /* ---------- Buttons & inputs ---------- */
+  .btn {
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    padding: 10px 18px; border-radius: 8px; cursor: pointer;
+    font: inherit; font-weight: 700; font-size: 0.88rem;
+  }
+  .btn:hover { border-color: #3a404b; }
+  .btn-primary { background: var(--lime); border-color: var(--lime); color: #0b0c0e; }
+  .btn-primary:hover { filter: brightness(1.07); border-color: var(--lime); }
+  .btn-ghost { background: transparent; color: var(--lime); }
+  .btn-ghost:hover { border-color: var(--lime); }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+  .more-btn { margin-top: 12px; }
+  .input {
+    flex: 1; min-width: 220px;
+    background: #0f1114; border: 1px solid var(--border); color: var(--text);
+    padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; font-family: var(--mono);
+  }
+  .input:focus { outline: none; border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-soft); }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+  }
+
+  /* ---------- Empty / neutral states ---------- */
+  .empty { border-left: 3px solid var(--lime); }
+  .empty.warn { border-left-color: var(--amber); }
+  .empty h3 { font-size: 1.05rem; font-weight: 650; }
+  .empty p { color: var(--muted); margin-top: 8px; max-width: 640px; font-size: 0.9rem; }
+
+  /* ---------- Loading / info messages ---------- */
+  .load-msg { color: var(--muted); font-size: 0.85rem; padding: 6px 0; word-break: break-word; }
+  .load-msg.error { color: var(--red); }
+  .load-msg.empty { color: var(--muted); }
+
+  /* ---------- Team cards ---------- */
+  .teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .team-card {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 10px; cursor: pointer; color: var(--text); font: inherit; text-align: center;
+  }
+  .team-card:hover { border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-soft); }
+  .team-card.static-card { cursor: default; }
+  .team-card.static-card:hover { border-color: var(--border); box-shadow: none; }
+  .team-logo { width: 44px; height: 44px; object-fit: contain; }
+  .logo-broken { display: none; }
+  .team-name { font-weight: 700; font-size: 0.85rem; line-height: 1.25; }
+  .team-sub { color: var(--muted); font-size: 0.72rem; }
+
+  /* ---------- Tables ---------- */
+  .table-wrap { overflow-x: auto; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 560px; }
+  .data-table th {
+    text-align: left; color: var(--muted); font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  .data-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .link-btn {
+    background: none; border: none; color: var(--text); font: inherit;
+    cursor: pointer; padding: 0; display: inline-flex; align-items: center; gap: 8px; text-align: left;
+  }
+  .link-btn:hover { color: var(--lime); }
+  .link-btn img { width: 20px; height: 20px; object-fit: contain; }
+
+  /* ---------- Game cards ---------- */
+  .games-list { display: flex; flex-direction: column; gap: 10px; }
+  .game-card {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; cursor: pointer; color: var(--text); font: inherit; text-align: left;
+  }
+  .game-card:hover { border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-soft); }
+  .game-side { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .game-side.away { justify-content: flex-end; text-align: right; }
+  .game-side .team-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .game-score { font-weight: 800; font-size: 1.05rem; color: var(--lime); white-space: nowrap; }
+  .game-meta {
+    grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 14px;
+    color: var(--muted); font-size: 0.72rem; align-items: center;
+  }
+  .status-badge {
+    padding: 2px 8px; border-radius: 999px;
+    font-size: 0.66rem; font-weight: 800; letter-spacing: 0.05em; white-space: nowrap;
+  }
+  .status-upcoming { background: #262b33; color: #9aa3ad; }
+  .status-live { background: var(--lime-soft); color: var(--lime); }
+  .status-done { background: var(--amber-soft); color: var(--amber); }
+
+  /* ---------- Predictions ---------- */
+  .pred-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-btn {
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    padding: 7px 14px; border-radius: 999px; cursor: pointer;
+    font: inherit; font-weight: 700; font-size: 0.8rem;
+  }
+  .filter-btn:hover { border-color: #3a404b; }
+  .filter-btn.active { background: var(--lime); border-color: var(--lime); color: #0b0c0e; }
+  .pred-list { display: flex; flex-direction: column; gap: 14px; }
+  .pred-card {
+    display: block; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; cursor: pointer;
+  }
+  .pred-card:hover, .pred-card:focus-visible { border-color: var(--lime); box-shadow: 0 0 0 3px var(--lime-soft); outline: none; }
+  .pred-head { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; }
+  .pred-side { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .pred-side.right { justify-content: flex-end; text-align: right; }
+  .pred-side img { width: 32px; height: 32px; object-fit: contain; flex: none; }
+  .pred-tname { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pred-trec { color: var(--muted); font-size: 0.72rem; white-space: nowrap; }
+  .pred-mid { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--muted); font-size: 0.74rem; text-align: center; }
+  .pred-section { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+  .pred-label { color: var(--lime); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.12em; margin-bottom: 6px; }
+  .pred-body { font-size: 0.88rem; }
+  .pred-body.insufficient { color: var(--amber); font-weight: 650; }
+  .pred-note { color: var(--muted); font-size: 0.76rem; margin-top: 4px; }
+  .pred-body .pill.conf { margin-left: 8px; }
+  .pred-formrow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pred-formcol { background: #0f1114; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 0.8rem; }
+  .pred-formcol .t { font-weight: 700; margin-bottom: 6px; }
+  .pred-formcol .r { display: block; color: var(--muted); font-size: 0.74rem; margin-top: 6px; }
+  .formchip {
+    display: inline-block; padding: 1px 7px; border-radius: 6px;
+    font-size: 0.72rem; font-weight: 700; margin: 0 4px 4px 0;
+    background: #262b33; color: #9aa3ad;
+  }
+  .formchip.w { background: var(--lime-soft); color: var(--lime); }
+  .formchip.l { background: var(--red-soft); color: var(--red); }
+  .pred-cmp { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .pred-cmp th { text-align: right; color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+  .pred-cmp th:first-child { text-align: left; }
+  .pred-cmp td { padding: 5px 8px; border-bottom: 1px solid var(--border); }
+  .pred-cmp tr:last-child td { border-bottom: none; }
+  .pred-cmp td:first-child { color: var(--muted); }
+  .pred-cmp td { text-align: right; font-weight: 650; }
+  .pred-cmp td:first-child { text-align: left; font-weight: 400; }
+  .pred-dataused { margin-top: 12px; color: var(--muted); font-size: 0.72rem; border-top: 1px dashed var(--border); padding-top: 8px; }
+  .pred-disclaimer { color: var(--muted); font-size: 0.78rem; }
+  .pred-toolbar { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+  .pred-search { max-width: 300px; }
+  .pred-tool-label { color: var(--muted); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+  .pred-block { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+  .pred-block.match { margin-top: 0; border-top: none; padding-top: 0; }
+  .pred-block-title { color: var(--lime); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.12em; margin-bottom: 8px; }
+  .pred-block-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .pred-block-head .pred-block-title { margin-bottom: 0; }
+  .cov { padding: 3px 9px; border-radius: 999px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.06em; white-space: nowrap; }
+  .cov-high { background: var(--lime); color: #0b0c0e; }
+  .cov-partial { background: var(--amber-soft); color: var(--amber); border: 1px solid rgba(255, 194, 71, 0.4); }
+  .cov-insuff { background: var(--red-soft); color: var(--red); border: 1px solid rgba(255, 97, 97, 0.4); }
+  .pred-du-list { margin: 0; padding-left: 18px; font-size: 0.78rem; color: var(--muted); }
+  .pred-du-list li { margin: 2px 0; }
+  @media (max-width: 720px) {
+    .pred-toolbar { flex-direction: column; align-items: stretch; }
+    .pred-search { max-width: none; }
+    .pred-formrow { grid-template-columns: 1fr; }
+    .pred-head { grid-template-columns: 1fr; }
+    .pred-side.right { justify-content: flex-start; text-align: left; }
+    .pred-mid { align-items: flex-start; }
+  }
+
+  /* ---------- Standings page ---------- */
+  .stand-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .stand-league-btns { display: flex; gap: 6px; }
+  .stand-search { max-width: 260px; }
+  .stand-conf { max-width: 260px; }
+  select.input { cursor: pointer; }
+  .stand-group { margin-bottom: 22px; }
+  .stand-group:last-child { margin-bottom: 0; }
+  .stand-conf-name { color: var(--lime); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 10px; }
+  .stand-div-name { color: var(--muted); font-size: 0.8rem; font-weight: 700; margin: 14px 0 6px; }
+  .stand-group .stand-div-name:first-of-type { margin-top: 0; }
+  .pred-tname[data-team-id] { cursor: pointer; }
+  .pred-tname[data-team-id]:hover { color: var(--lime); text-decoration: underline; }
+
+  /* ---------- Details (team / game views) ---------- */
+  .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 14px; }
+  .details-item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .details-item .k { color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .details-item .v { font-weight: 650; margin-top: 2px; word-break: break-word; }
+  .team-hero { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .team-hero img { width: 64px; height: 64px; object-fit: contain; }
+  .game-big { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: center; }
+  .game-big .team-block { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; min-width: 0; }
+  .game-big .team-block img { width: 56px; height: 56px; object-fit: contain; }
+  .game-big .total { font-size: 1.9rem; font-weight: 800; color: var(--lime); }
+  .middle-col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  details.raw { margin-top: 12px; }
+  details.raw summary { cursor: pointer; color: var(--muted); font-size: 0.8rem; }
+  details.raw pre {
+    margin-top: 8px; background: #0d0f12; border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; font-size: 0.72rem; overflow: auto; max-height: 260px;
+    color: #c9d6b8; white-space: pre; font-family: var(--mono);
+  }
+
+  /* ---------- Verification ---------- */
+  .backend-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .hint { color: var(--muted); font-size: 0.82rem; margin-top: 10px; }
+  .hint.warn { color: var(--amber); }
+  .hint code { font-family: var(--mono); color: var(--lime); font-size: 0.78rem; word-break: break-all; }
+  .verify-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .overall {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px; margin-top: 14px;
+  }
+  #overall-text { font-size: 0.88rem; color: var(--muted); }
+  .checks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .check-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .check-head h4 { font-size: 0.98rem; }
+  .check-path {
+    display: inline-block; margin-top: 10px;
+    font-family: var(--mono); font-size: 0.74rem;
+    color: var(--lime); background: var(--lime-soft);
+    padding: 3px 8px; border-radius: 6px;
+    word-break: break-all;
+  }
+  .check-note { color: var(--muted); font-size: 0.78rem; font-style: italic; margin-top: 8px; }
+  .check-msg { margin-top: 12px; font-size: 0.85rem; color: var(--muted); word-break: break-word; }
+  .check-data {
+    margin-top: 10px;
+    background: #0d0f12; border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; font-family: var(--mono); font-size: 0.76rem;
+    color: #c9d6b8; overflow: auto; max-height: 220px; white-space: pre;
+  }
+
+  /* ---------- Status pills ---------- */
+  .pill {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; flex: none;
+  }
+  .pill-idle { background: #262b33; color: #9aa3ad; }
+  .pill-busy { background: var(--lime-soft); color: var(--lime); animation: pulse 1.1s ease-in-out infinite; }
+  .pill-pass { background: var(--lime); color: #0b0c0e; }
+  .pill-nodata { background: var(--amber-soft); color: var(--amber); border: 1px solid rgba(255, 194, 71, 0.4); }
+  .pill-error { background: var(--red-soft); color: var(--red); border: 1px solid rgba(255, 97, 97, 0.4); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+  /* ---------- Footer ---------- */
+  .footer {
+    max-width: 1200px; margin: 0 auto; padding: 20px 24px 32px;
+    border-top: 1px solid var(--border); color: var(--muted); font-size: 0.78rem;
+  }
+
+  @media (max-width: 720px) {
+    .stand-filters { flex-direction: column; align-items: stretch; }
+    .stand-search, .stand-conf { max-width: none; }
+  }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width: 720px) {
+    .topbar-inner { padding: 12px 16px; }
+    .mainnav { padding: 0 16px; }
+    main { padding: 20px 16px 48px; }
+    .card { padding: 16px; }
+    .backend-row .btn { width: 100%; }
+    .verify-head .btn { width: 100%; }
+    .footer { padding: 16px; }
+    .teams-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    .game-card { grid-template-columns: 1fr auto 1fr; gap: 8px; padding: 10px 12px; }
+    .game-side .team-name { font-size: 0.78rem; }
+    .page-head-row .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<noscript>
+  <div style="padding:16px;background:#2a1d1d;color:#ffb3b3;text-align:center;">SnapEdge AI requires JavaScript for navigation and live data.</div>
+</noscript>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="#home" class="brand" data-nav="home" aria-label="SnapEdge AI home">
+      <span class="brand-mark" aria-hidden="true">S</span>
+      <span class="brand-text">SnapEdge<span class="brand-ai">AI</span></span>
+    </a>
+    <div class="top-status">
+      <span class="chip" id="chip-backend">Backend: <strong>not set</strong></span>
+      <span class="chip">Prediction engine: <strong>not connected</strong></span>
+    </div>
+  </div>
+  <nav class="mainnav" aria-label="Primary">
+    <button class="nav-btn active" data-nav="home" type="button">Home</button>
+    <button class="nav-btn" data-nav="nfl" type="button">NFL</button>
+    <button class="nav-btn" data-nav="cfb" type="button">College Football</button>
+    <button class="nav-btn" data-nav="predictions" type="button">Predictions</button>
+    <button class="nav-btn" data-nav="standings" type="button">Standings</button>
+    <button class="nav-btn" data-nav="verify" type="button">Live Data Verification</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ============ HOME ============ -->
+  <section class="page active" id="page-home">
+    <div class="card hero">
+      <p class="kicker">SPORTS INTELLIGENCE DASHBOARD</p>
+      <h1>Live sports data, <span class="accent">verified</span> before it is trusted.</h1>
+      <p class="lede">SnapEdge AI displays only what the connected backend actually returns — no sample feeds, no cached tables, no simulated results.</p>
+      <div class="status-row">
+        <span class="status-item"><span class="dot on"></span>Data backend — connected &amp; verified</span>
+        <span class="status-item"><span class="dot"></span>Prediction engine — not connected</span>
+      </div>
+      <button class="btn btn-primary" data-nav="verify" type="button">Open Live Data Verification</button>
+    </div>
+    <div class="grid-3">
+      <div class="card feature">
+        <h3>NFL coverage</h3>
+        <p>Live teams, standings, schedules and game results from the verified backend.</p>
+        <button class="btn btn-ghost" data-nav="nfl" type="button">Go to NFL</button>
+      </div>
+      <div class="card feature">
+        <h3>College football</h3>
+        <p>NCAA teams, schedules and scores — live from the verified backend.</p>
+        <button class="btn btn-ghost" data-nav="cfb" type="button">Go to College Football</button>
+      </div>
+      <div class="card feature">
+        <h3>Data verification</h3>
+        <p>Seven end-to-end checks confirm every feed answers with real data before you rely on it.</p>
+        <button class="btn btn-ghost" data-nav="verify" type="button">Run checks</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Today's Games</h3>
+      <div id="home-today" class="games-list"></div>
+      <button id="home-today-more" class="btn btn-ghost btn-sm more-btn" data-more="home-today" hidden type="button">Show all</button>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3 class="card-title">Upcoming NFL Games</h3>
+        <div id="home-upcoming" class="games-list"></div>
+        <button id="home-upcoming-more" class="btn btn-ghost btn-sm more-btn" data-more="home-upcoming" hidden type="button">Show all</button>
+      </div>
+      <div class="card">
+        <h3 class="card-title">College Football Games</h3>
+        <div id="home-cfb" class="games-list"></div>
+        <button id="home-cfb-more" class="btn btn-ghost btn-sm more-btn" data-more="home-cfb" hidden type="button">Show all</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 class="card-title">NFL Standings Highlights</h3>
+      <div id="home-standings-body"></div>
+    </div>
+  </section>
+
+  <!-- ============ NFL ============ -->
+  <section class="page" id="page-nfl">
+    <div class="page-head">
+      <div class="page-head-row">
+        <div>
+          <h2>NFL</h2>
+          <p>Live NFL data from the connected backend. Click a team or a game for details.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" data-refresh="nfl" type="button">Refresh</button>
+      </div>
+    </div>
+
+    <div id="nfl-overview" style="display:flex; flex-direction:column; gap:16px;">
+      <div class="card">
+        <h3 class="card-title">Teams</h3>
+        <div id="nfl-teams-body" class="teams-grid"></div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Standings</h3>
+        <div id="nfl-standings-body"></div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Upcoming Games</h3>
+        <div id="nfl-upcoming" class="games-list"></div>
+        <button id="nfl-upcoming-more" class="btn btn-ghost btn-sm more-btn" data-more="nfl-upcoming" hidden type="button">Show all</button>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Completed Games</h3>
+        <div id="nfl-completed" class="games-list"></div>
+        <button id="nfl-completed-more" class="btn btn-ghost btn-sm more-btn" data-more="nfl-completed" hidden type="button">Show all</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============ COLLEGE FOOTBALL ============ -->
+  <section class="page" id="page-cfb">
+    <div class="page-head">
+      <div class="page-head-row">
+        <div>
+          <h2>College Football</h2>
+          <p>Live NCAA data from the connected backend. Click a game for details.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" data-refresh="cfb" type="button">Refresh</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 class="card-title">Teams</h3>
+      <div id="cfb-teams-body" class="teams-grid"></div>
+      <button id="cfb-teams-body-more" class="btn btn-ghost btn-sm more-btn" data-more="cfb-teams-body" hidden type="button">Show all</button>
+    </div>
+    <div class="card">
+      <h3 class="card-title">Upcoming Games</h3>
+      <div id="cfb-upcoming" class="games-list"></div>
+      <button id="cfb-upcoming-more" class="btn btn-ghost btn-sm more-btn" data-more="cfb-upcoming" hidden type="button">Show all</button>
+    </div>
+    <div class="card">
+      <h3 class="card-title">Completed Games &amp; Scores</h3>
+      <div id="cfb-completed" class="games-list"></div>
+      <button id="cfb-completed-more" class="btn btn-ghost btn-sm more-btn" data-more="cfb-completed" hidden type="button">Show all</button>
+    </div>
+  </section>
+
+  <!-- ============ PREDICTIONS ============ -->
+  <section class="page" id="page-predictions">
+    <div class="page-head">
+      <h2>Predictions</h2>
+      <p>Statistical game analysis computed in your browser from live verified backend data — standings records, points, and completed game results. This is analysis, not a prediction engine, and no outcome is guaranteed.</p>
+    </div>
+    <div class="card">
+      <div class="pred-filters" aria-label="Prediction filters">
+        <button type="button" class="filter-btn active" data-pred-filter="upcoming">Upcoming</button>
+        <button type="button" class="filter-btn" data-pred-filter="today">Today</button>
+        <button type="button" class="filter-btn" data-pred-filter="nfl">NFL</button>
+        <button type="button" class="filter-btn" data-pred-filter="cfb">College Football</button>
+      </div>
+      <div class="pred-toolbar">
+        <label class="sr-only" for="pred-search">Search by team</label>
+        <input class="input pred-search" id="pred-search" type="search" placeholder="Search by team name…" autocomplete="off">
+        <div class="pred-filters" aria-label="Sort order">
+          <span class="pred-tool-label">Sort</span>
+          <button type="button" class="filter-btn active" data-pred-sort="time">Game time</button>
+          <button type="button" class="filter-btn" data-pred-sort="coverage">Data coverage</button>
+        </div>
+      </div>
+      <p class="hint" id="pred-count"></p>
+    </div>
+    <div class="card">
+      <div id="pred-list" class="pred-list"></div>
+      <button id="pred-list-more" class="btn btn-ghost btn-sm more-btn" data-more="pred-list" hidden type="button">Show all</button>
+    </div>
+  </section>
+
+  <!-- ============ STANDINGS ============ -->
+  <section class="page" id="page-standings">
+    <div class="page-head">
+      <div class="page-head-row">
+        <div>
+          <h2>Standings</h2>
+          <p>Live standings from the connected backend, grouped by conference and division as returned by the API.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" data-refresh="standings" type="button">Refresh</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="stand-filters" aria-label="Standings filters">
+        <div class="stand-league-btns">
+          <button type="button" class="filter-btn active" data-stand-league="nfl">NFL</button>
+          <button type="button" class="filter-btn" data-stand-league="ncaa">College Football</button>
+        </div>
+        <label class="sr-only" for="stand-search">Search by team</label>
+        <input class="input stand-search" id="stand-search" type="search" placeholder="Search by team name…" autocomplete="off">
+        <label class="sr-only" for="stand-conf">Conference filter</label>
+        <select class="input stand-conf" id="stand-conf">
+          <option value="all">All conferences</option>
+        </select>
+      </div>
+    </div>
+    <div class="card">
+      <div id="standings-body"></div>
+    </div>
+  </section>
+
+  <!-- ============ LIVE DATA VERIFICATION ============ -->
+  <section class="page" id="page-verify">
+    <div class="page-head">
+      <h2>Live Data Verification</h2>
+      <p>Point the dashboard at your backend and run end-to-end checks. Every result below comes from a real request — nothing is simulated.</p>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Backend connection</h3>
+      <div class="backend-row">
+        <label class="sr-only" for="backend-url">Backend URL</label>
+        <input class="input" id="backend-url" type="url" value="https://hyyxrnzmpihhejfzttux.supabase.co/functions/v1/sports" placeholder="https://your-backend.example.com" spellcheck="false" autocomplete="off">
+        <button class="btn btn-primary" id="btn-set" type="button">Set</button>
+      </div>
+      <p class="hint" id="backend-hint">Preconfigured with the SnapEdge AI Supabase endpoint.</p>
+    </div>
+
+    <div class="card">
+      <div class="verify-head">
+        <h3 class="card-title">Verification run</h3>
+        <button class="btn btn-primary" id="btn-run" type="button">Run Verification</button>
+      </div>
+      <div class="overall" id="overall-status">
+        <span class="pill pill-idle" id="overall-pill">IDLE</span>
+        <span id="overall-text">Not run yet. Set a backend URL above, then run verification.</span>
+      </div>
+    </div>
+
+    <div class="checks-grid" id="checks-grid"></div>
+  </section>
+
+  <!-- ============ TEAM DETAILS (opened by clicking a team) ============ -->
+  <section class="page" id="page-team">
+    <div><button class="btn btn-ghost btn-sm" data-navback type="button">&#8592; Back</button></div>
+    <div class="card" id="team-info-card"></div>
+    <div class="card" id="team-standings-card" hidden>
+      <h3 class="card-title">Standings</h3>
+      <div id="team-standings-body"></div>
+    </div>
+    <div class="card" id="team-form-card" hidden>
+      <h3 class="card-title">Recent Form</h3>
+      <div id="team-form-body"></div>
+    </div>
+    <div class="card" id="team-roster-card" hidden>
+      <h3 class="card-title">Roster</h3>
+      <div id="team-roster-body"></div>
+    </div>
+    <div class="card">
+      <h3 class="card-title">Upcoming Games</h3>
+      <div id="team-sched-up-body" class="games-list"></div>
+    </div>
+    <div class="card">
+      <h3 class="card-title">Completed Games</h3>
+      <div id="team-sched-done-body" class="games-list"></div>
+    </div>
+  </section>
+
+  <!-- ============ GAME DETAILS (opened by clicking a game) ============ -->
+  <section class="page" id="page-game">
+    <div><button class="btn btn-ghost btn-sm" data-navback type="button">&#8592; Back</button></div>
+    <div id="game-content"></div>
+  </section>
+</main>
+
+<footer class="footer">
+  <p>Live sports data via the connected Supabase Edge Function. Prediction engine and payments are not connected.</p>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---- Backend ---------------------------------------------------------
+  // The frontend calls only the SnapEdge AI Supabase Edge Function.
+  const DEFAULT_BACKEND_URL = 'https://hyyxrnzmpihhejfzttux.supabase.co/functions/v1/sports';
+
+  const PAGES = ['home', 'nfl', 'cfb', 'predictions', 'standings', 'verify'];
+  const STORAGE_KEY = 'snapedge.backendUrl';
+  const state = { backendUrl: '' };
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+  }
+  function val(v) { return (v === null || v === undefined) ? '' : String(v); }
+
+  // ---- Navigation -----------------------------------------------------
+  let currentPage = 'home';
+  let returnPage = 'home';
+  let returnScrollY = 0;
+
+  function showPage(id, opts) {
+    opts = opts || {};
+    document.querySelectorAll('.page').forEach(p => {
+      p.classList.toggle('active', p.id === 'page-' + id);
+    });
+    if (opts.subview) { window.scrollTo(0, 0); return; }
+    currentPage = id;
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      const on = b.dataset.nav === id;
+      b.classList.toggle('active', on);
+      if (on) { b.setAttribute('aria-current', 'page'); } else { b.removeAttribute('aria-current'); }
+    });
+    if (history.replaceState) { history.replaceState(null, '', '#' + id); }
+    window.scrollTo(0, 0);
+    if (id === 'home') { renderHomePage(); }
+    else if (id === 'nfl') { renderNFLPage(); }
+    else if (id === 'cfb') { renderCFBPage(); }
+    else if (id === 'predictions') { renderPredictionsPage(); }
+    else if (id === 'standings') { renderStandingsPage(); }
+  }
+
+  document.addEventListener('click', e => {
+    const navEl = e.target.closest('[data-nav]');
+    if (navEl) { e.preventDefault(); showPage(navEl.getAttribute('data-nav')); return; }
+    if (e.target.closest('[data-navback]')) {
+      const y = returnScrollY;
+      returnScrollY = 0;
+      showPage(returnPage);
+      if (y > 0) { window.scrollTo(0, y); }
+      return;
+    }
+    const refreshEl = e.target.closest('[data-refresh]');
+    if (refreshEl) { forceRender(refreshEl.getAttribute('data-refresh')); return; }
+    const predEl = e.target.closest('[data-pred-filter]');
+    if (predEl) {
+      predFilter = predEl.getAttribute('data-pred-filter');
+      document.querySelectorAll('.filter-btn[data-pred-filter]').forEach(b => b.classList.toggle('active', b === predEl));
+      renderPredList();
+      return;
+    }
+    const sortEl = e.target.closest('[data-pred-sort]');
+    if (sortEl) {
+      predSort = sortEl.getAttribute('data-pred-sort');
+      document.querySelectorAll('[data-pred-sort]').forEach(b => b.classList.toggle('active', b === sortEl));
+      renderPredList();
+      return;
+    }
+    const moreEl = e.target.closest('[data-more]');
+    if (moreEl) { expandList(moreEl.getAttribute('data-more')); return; }
+    const teamEl = e.target.closest('[data-team-id]');
+    if (teamEl) { openTeamDetails(teamEl.getAttribute('data-team-id')); return; }
+    const gameEl = e.target.closest('[data-game-id]');
+    if (gameEl) { openGameDetails(gameEl.getAttribute('data-game-id')); return; }
+  });
+
+  // Keyboard activation for clickable cards (team links, prediction analysis cards).
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') { return; }
+    const teamEl = e.target.closest ? e.target.closest('[data-team-id]') : null;
+    if (teamEl) {
+      e.preventDefault();
+      openTeamDetails(teamEl.getAttribute('data-team-id'));
+      return;
+    }
+    const el = e.target.closest ? e.target.closest('article[data-game-id]') : null;
+    if (el) {
+      e.preventDefault();
+      openGameDetails(el.getAttribute('data-game-id'));
+    }
+  });
+
+  // ---- Backend URL field (shared with verification) --------------------
+  const input = document.getElementById('backend-url');
+  const btnSet = document.getElementById('btn-set');
+  const backendHint = document.getElementById('backend-hint');
+  const chipBackend = document.getElementById('chip-backend');
+
+  function storageGet() { try { return window.localStorage.getItem(STORAGE_KEY) || ''; } catch (e) { return ''; } }
+  function storageSet(v) { try { window.localStorage.setItem(STORAGE_KEY, v); } catch (e) { /* storage unavailable — URL stays in memory only */ } }
+
+  function reflectBackend() {
+    if (state.backendUrl) {
+      chipBackend.innerHTML = 'Backend: <strong class="ok">set</strong>';
+      chipBackend.title = state.backendUrl;
+      backendHint.innerHTML = 'Backend set to <code>' + esc(state.backendUrl) + '</code>. Update it any time and press Set again.';
+    } else {
+      chipBackend.innerHTML = 'Backend: <strong>not set</strong>';
+      chipBackend.title = '';
+      backendHint.textContent = 'Preconfigured with the SnapEdge AI Supabase endpoint. Enter a different base URL and click Set if needed.';
+      backendHint.className = 'hint';
+    }
+  }
+
+  function applyBackendUrl() {
+    const raw = input.value.trim();
+    if (!raw) {
+      backendHint.textContent = 'Enter a backend URL first.';
+      backendHint.className = 'hint warn';
+      return;
+    }
+    let u;
+    try { u = new URL(raw); } catch (e) {
+      backendHint.textContent = 'That is not a valid URL.';
+      backendHint.className = 'hint warn';
+      return;
+    }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+      backendHint.textContent = 'URL must start with http:// or https://';
+      backendHint.className = 'hint warn';
+      return;
+    }
+    state.backendUrl = raw.replace(/\/+$/, '');
+    storageSet(state.backendUrl);
+    dataCache.clear();
+    reflectBackend();
+  }
+
+  btnSet.addEventListener('click', applyBackendUrl);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { applyBackendUrl(); } });
+
+  // ================= Live page data =================
+  const dataCache = new Map();
+  const CACHE_TTL = 120000;
+  const FINISHED_STATUSES = ['FT', 'AOT'];
+  const NCAA_LEAGUE_ID = '2';
+  const store = {};            // fetched data arrays, keyed by name
+  const pageState = {};        // which pages already rendered
+  const expandedLists = new Set();
+  const listRenderers = {};    // listId -> re-render closure
+
+  function currentSeason() { return String(new Date().getFullYear()); }
+  function localToday() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  async function apiGet(path, params, force) {
+    const root = (state.backendUrl || DEFAULT_BACKEND_URL).replace(/\/+$/, '');
+    const qs = params ? new URLSearchParams(params).toString() : '';
+    const url = root + path + (qs ? '?' + qs : '');
+    const cached = dataCache.get(url);
+    if (!force && cached && Date.now() - cached.ts < CACHE_TTL) { return cached.data; }
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    let res;
+    try {
+      res = await fetch(url, { signal: ctrl.signal, cache: 'no-store', headers: { 'Accept': 'application/json' } });
+    } catch (err) {
+      clearTimeout(timer);
+      throw new Error((err && err.name === 'AbortError') ? 'Request timed out.' : ((err && err.message) || 'Network request failed.'));
+    }
+    clearTimeout(timer);
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status + (text.trim() ? ' — ' + trunc(text.trim().replace(/\s+/g, ' '), 180) : ''));
+    }
+    let data;
+    try { data = JSON.parse(text); } catch (e) { throw new Error('Response was not valid JSON.'); }
+    if (data && typeof data === 'object' && Object.prototype.hasOwnProperty.call(data, 'errors')) {
+      const errs = describeBackendErrors(data.errors);
+      if (errs) { throw new Error('Backend reported: ' + errs); }
+    }
+    dataCache.set(url, { ts: Date.now(), data });
+    return data;
+  }
+
+  function rowsOf(data) { return (data && Array.isArray(data.response)) ? data.response : []; }
+
+  async function ensureRows(key, path, params, force) {
+    if (!force && store[key]) { return store[key]; }
+    const data = await apiGet(path, params, force);
+    store[key] = rowsOf(data);
+    return store[key];
+  }
+
+  function setMsg(id, kind, text) {
+    const elc = document.getElementById(id);
+    if (!elc) { return; }
+    elc.className = 'load-msg' + (kind === 'error' ? ' error' : kind === 'empty' ? ' empty' : '');
+    elc.textContent = text;
+    hideMore(id);
+  }
+  function emptyMsg(id) { setMsg(id, 'empty', 'No data available.'); }
+  function failMsg(id, err) {
+    setMsg(id, 'error', 'Unable to load data.' + (err && err.message ? ' ' + err.message : ''));
+  }
+  function hideMore(id) {
+    const b = document.getElementById(id + '-more');
+    if (b) { b.hidden = true; }
+  }
+
+  function renderTeamsGrid(id, teams, clickable) {
+    const elc = document.getElementById(id);
+    elc.className = 'teams-grid';
+    elc.innerHTML = teams.map(t => {
+      const logo = t.logo ? '<img class="team-logo" src="' + esc(t.logo) + '" alt="" loading="lazy" onerror="this.classList.add(\'logo-broken\')">' : '';
+      const sub = t.code || t.city ? '<span class="team-sub">' + esc(val(t.code || t.city)) + '</span>' : '';
+      const attr = clickable ? ' data-team-id="' + esc(val(t.id)) + '"' : '';
+      const cls = clickable ? 'team-card' : 'team-card static-card';
+      return '<button type="button" class="' + cls + '"' + attr + '>' + logo +
+        '<span class="team-name">' + esc(val(t.name)) + '</span>' + sub +
+      '</button>';
+    }).join('');
+  }
+
+  function renderTeamsCapped(id, teams, clickable, cap) {
+    const expanded = expandedLists.has(id);
+    renderTeamsGrid(id, expanded ? teams : teams.slice(0, cap), clickable);
+    const moreBtn = document.getElementById(id + '-more');
+    if (moreBtn) {
+      if (teams.length > cap) {
+        moreBtn.hidden = false;
+        moreBtn.textContent = expanded ? 'Show less' : 'Show all (' + teams.length + ')';
+      } else { moreBtn.hidden = true; }
+    }
+  }
+
+  function splitGames(rows) {
+    const finished = [];
+    const upcoming = [];
+    rows.forEach(g => {
+      const short = g && g.game && g.game.status && g.game.status.short;
+      if (FINISHED_STATUSES.indexOf(short) !== -1) { finished.push(g); } else { upcoming.push(g); }
+    });
+    const ts = x => (x && x.game && x.game.date && typeof x.game.date.timestamp === 'number') ? x.game.date.timestamp : 0;
+    finished.sort((a, b) => ts(b) - ts(a));
+    upcoming.sort((a, b) => ts(a) - ts(b));
+    return { finished, upcoming };
+  }
+
+  function statusBadge(st) {
+    const short = (st && st.short) || '';
+    const cls = FINISHED_STATUSES.indexOf(short) !== -1 ? 'status-done' : (short === 'NS' ? 'status-upcoming' : 'status-live');
+    return '<span class="status-badge ' + cls + '">' + esc(val((st && st.long) || short) || '—') + '</span>';
+  }
+
+  function renderGameCard(g, leagueTag) {
+    const game = g.game || {};
+    const home = (g.teams && g.teams.home) || {};
+    const away = (g.teams && g.teams.away) || {};
+    const sc = g.scores || {};
+    const started = sc.home && typeof sc.home.total === 'number';
+    const scoreTxt = started
+      ? esc(String(sc.home.total)) + ' – ' + esc(String(sc.away.total))
+      : esc(val(game.date && game.date.time) || '—');
+    const logo = l => l ? '<img class="team-logo" src="' + esc(l) + '" alt="" loading="lazy" onerror="this.classList.add(\'logo-broken\')">' : '';
+    const meta = [];
+    if (game.date && game.date.date) { meta.push('<span>' + esc(game.date.date) + (game.date.time ? ' ' + esc(game.date.time) + ' UTC' : '') + '</span>'); }
+    if (game.venue && (game.venue.name || game.venue.city)) { meta.push('<span>' + esc([game.venue.name, game.venue.city].filter(Boolean).join(', ')) + '</span>'); }
+    if (game.stage) { meta.push('<span>' + esc(game.stage) + (game.week ? ' · ' + esc(String(game.week)) : '') + '</span>'); }
+    if (leagueTag) { meta.push('<span>' + esc(leagueTag) + '</span>'); }
+    return '<button type="button" class="game-card" data-game-id="' + esc(val(game.id)) + '">' +
+      '<span class="game-side">' + logo(home.logo) + '<span class="team-name">' + esc(val(home.name)) + '</span></span>' +
+      '<span class="game-score">' + scoreTxt + '</span>' +
+      '<span class="game-side away"><span class="team-name">' + esc(val(away.name)) + '</span>' + logo(away.logo) + '</span>' +
+      '<span class="game-meta">' + statusBadge(game.status) + meta.join('') + '</span>' +
+    '</button>';
+  }
+
+  function renderGameList(listId, games, leagueTag) {
+    const elc = document.getElementById(listId);
+    elc.className = 'games-list';
+    const moreBtn = document.getElementById(listId + '-more');
+    if (!games.length) { emptyMsg(listId); return; }
+    const cap = 12;
+    const shown = expandedLists.has(listId) ? games : games.slice(0, cap);
+    elc.innerHTML = shown.map(g => renderGameCard(g, leagueTag)).join('');
+    if (moreBtn) {
+      if (games.length > cap) {
+        moreBtn.hidden = false;
+        moreBtn.textContent = expandedLists.has(listId) ? 'Show less' : 'Show all (' + games.length + ')';
+      } else { moreBtn.hidden = true; }
+    }
+  }
+
+  function expandList(id) {
+    if (expandedLists.has(id)) { expandedLists.delete(id); } else { expandedLists.add(id); }
+    const fn = listRenderers[id];
+    if (fn) { fn(); }
+  }
+
+  function sortStandings(rows) {
+    return rows.slice().sort((a, b) => {
+      const c = val(a.conference).localeCompare(val(b.conference));
+      if (c !== 0) { return c; }
+      const d = val(a.division).localeCompare(val(b.division));
+      if (d !== 0) { return d; }
+      return (a.position || 0) - (b.position || 0);
+    });
+  }
+
+  function standingsTableHtml(rows) {
+    const sorted = sortStandings(rows);
+    return '<div class="table-wrap"><table class="data-table"><thead><tr>' +
+      ['Pos', 'Team', 'W', 'L', 'T', 'PF', 'PA', 'Streak', 'Division'].map(h => '<th>' + h + '</th>').join('') +
+      '</tr></thead><tbody>' +
+      sorted.map(r => {
+        const team = r.team || {};
+        const pts = r.points || {};
+        const logo = team.logo ? '<img src="' + esc(team.logo) + '" alt="" onerror="this.classList.add(\'logo-broken\')">' : '';
+        return '<tr>' +
+          '<td>' + esc(val(r.position)) + '</td>' +
+          '<td><button type="button" class="link-btn" data-team-id="' + esc(val(team.id)) + '">' + logo + '<span>' + esc(val(team.name)) + '</span></button></td>' +
+          '<td>' + esc(val(r.won)) + '</td><td>' + esc(val(r.lost)) + '</td><td>' + esc(val(r.ties)) + '</td>' +
+          '<td>' + esc(val(pts.for)) + '</td><td>' + esc(val(pts.against)) + '</td>' +
+          '<td>' + esc(val(r.streak)) + '</td>' +
+          '<td>' + esc(val(r.division)) + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  function detailItem(k, v) {
+    const s = val(v);
+    if (!s) { return ''; }
+    return '<div class="details-item"><div class="k">' + esc(String(k)) + '</div><div class="v">' + esc(s) + '</div></div>';
+  }
+
+  // ---- Page renderers ---------------------------------------------------
+  async function renderNFLPage(force) {
+    if (pageState.nfl && !force) { return; }
+    pageState.nfl = true;
+
+    try {
+      const teams = await ensureRows('nflTeams', '/nfl/teams', null, force);
+      if (!teams.length) { emptyMsg('nfl-teams-body'); } else { renderTeamsGrid('nfl-teams-body', teams, true); }
+    } catch (err) { failMsg('nfl-teams-body', err); }
+
+    try {
+      const rows = await ensureRows('nflStandings', '/nfl/standings', null, force);
+      const elc = document.getElementById('nfl-standings-body');
+      if (!rows.length) { emptyMsg('nfl-standings-body'); }
+      else { elc.className = ''; elc.innerHTML = standingsTableHtml(rows); }
+    } catch (err) { failMsg('nfl-standings-body', err); }
+
+    try {
+      const rows = await ensureRows('nflGames', '/nfl/games', null, force);
+      const parts = splitGames(rows);
+      listRenderers['nfl-upcoming'] = () => renderGameList('nfl-upcoming', parts.upcoming, 'NFL');
+      listRenderers['nfl-completed'] = () => renderGameList('nfl-completed', parts.finished, 'NFL');
+      listRenderers['nfl-upcoming']();
+      listRenderers['nfl-completed']();
+    } catch (err) { failMsg('nfl-upcoming', err); failMsg('nfl-completed', err); }
+  }
+
+  async function renderCFBPage(force) {
+    if (pageState.cfb && !force) { return; }
+    pageState.cfb = true;
+    const params = { league: NCAA_LEAGUE_ID, season: currentSeason() };
+
+    try {
+      const teams = await ensureRows('ncaaTeams', '/ncaa/teams', params, force);
+      if (!teams.length) { emptyMsg('cfb-teams-body'); }
+      else { renderTeamsCapped('cfb-teams-body', teams, true, 60); }
+      listRenderers['cfb-teams-body'] = () => {
+        if (!store.ncaaTeams || !store.ncaaTeams.length) { emptyMsg('cfb-teams-body'); return; }
+        renderTeamsCapped('cfb-teams-body', store.ncaaTeams, true, 60);
+      };
+    } catch (err) { failMsg('cfb-teams-body', err); }
+
+    try {
+      const rows = await ensureRows('ncaaGames', '/ncaa/games', params, force);
+      const parts = splitGames(rows);
+      listRenderers['cfb-upcoming'] = () => renderGameList('cfb-upcoming', parts.upcoming, 'NCAA');
+      listRenderers['cfb-completed'] = () => renderGameList('cfb-completed', parts.finished, 'NCAA');
+      listRenderers['cfb-upcoming']();
+      listRenderers['cfb-completed']();
+    } catch (err) { failMsg('cfb-upcoming', err); failMsg('cfb-completed', err); }
+  }
+
+  // ================= Standings page (grouped, filterable) =================
+  let standLeague = 'nfl';
+  let standQuery = '';
+  let standConf = 'all';
+  const standErrors = { nfl: null, ncaa: null };
+
+  function standRows() { return (standLeague === 'nfl' ? store.nflStandings : store.ncaaStandings) || null; }
+
+  function buildStandConfOptions() {
+    const sel = document.getElementById('stand-conf');
+    if (!sel) { return; }
+    const rows = standRows() || [];
+    const confs = Array.from(new Set(rows.map(r => val(r.conference)).filter(Boolean))).sort();
+    if (confs.indexOf(standConf) === -1) { standConf = 'all'; }
+    sel.innerHTML = '<option value="all">All conferences</option>' +
+      confs.map(c => '<option value="' + esc(c) + '"' + (c === standConf ? ' selected' : '') + '>' + esc(c) + '</option>').join('');
+  }
+
+  function winPctCell(r) {
+    const gp = gamesPlayedOf(r);
+    if (!gp) { return '—'; }
+    const pct = ((Number(r.won) || 0) + 0.5 * (Number(r.ties) || 0)) / gp;
+    return (pct * 100).toFixed(1) + '%';
+  }
+
+  function standTableHtml(rows) {
+    return '<div class="table-wrap"><table class="data-table"><thead><tr>' +
+      ['Pos', 'Team', 'W', 'L', 'T', 'Win %', 'Streak'].map(h => '<th>' + h + '</th>').join('') +
+      '</tr></thead><tbody>' +
+      rows.map(r => {
+        const team = r.team || {};
+        const logo = team.logo ? '<img src="' + esc(team.logo) + '" alt="" loading="lazy" onerror="this.classList.add(\'logo-broken\')">' : '';
+        return '<tr>' +
+          '<td>' + esc(val(r.position) || '—') + '</td>' +
+          '<td><button type="button" class="link-btn" data-team-id="' + esc(val(team.id)) + '">' + logo + '<span>' + esc(val(team.name)) + '</span></button></td>' +
+          '<td>' + esc(val(r.won)) + '</td>' +
+          '<td>' + esc(val(r.lost)) + '</td>' +
+          '<td>' + esc(r.ties === null || r.ties === undefined ? '—' : val(r.ties)) + '</td>' +
+          '<td>' + winPctCell(r) + '</td>' +
+          '<td>' + esc(val(r.streak) || '—') + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  function groupedStandingsHtml(rows) {
+    const byConf = new Map();
+    rows.forEach(r => {
+      const c = val(r.conference) || 'Unknown conference';
+      if (standConf !== 'all' && c !== standConf) { return; }
+      if (!byConf.has(c)) { byConf.set(c, []); }
+      byConf.get(c).push(r);
+    });
+    if (!byConf.size) { return ''; }
+    let html = '';
+    Array.from(byConf.keys()).sort().forEach(conf => {
+      html += '<div class="stand-group"><div class="stand-conf-name">' + esc(conf) + '</div>';
+      const list = byConf.get(conf).slice().sort((a, b) => (a.position || 0) - (b.position || 0));
+      const divisions = new Map();
+      list.forEach(r => {
+        const d = val(r.division) || null;
+        if (!divisions.has(d)) { divisions.set(d, []); }
+        divisions.get(d).push(r);
+      });
+      Array.from(divisions.keys()).forEach(d => {
+        html += (d ? '<div class="stand-div-name">' + esc(d) + '</div>' : '') + standTableHtml(divisions.get(d));
+      });
+      html += '</div>';
+    });
+    return html;
+  }
+
+  function renderStandingsBody() {
+    const elc = document.getElementById('standings-body');
+    if (!elc) { return; }
+    const rows = standRows();
+    if (!rows) {
+      const err = standErrors[standLeague];
+      if (err) { elc.className = 'load-msg error'; elc.textContent = 'Unable to load data. ' + err; }
+      else { elc.className = 'load-msg'; elc.textContent = 'Loading...'; }
+      return;
+    }
+    if (!rows.length) {
+      elc.className = 'load-msg empty';
+      elc.textContent = 'Standings unavailable from current data source';
+      return;
+    }
+    let filtered = rows;
+    if (standQuery) {
+      const q = standQuery.toLowerCase();
+      filtered = filtered.filter(r => r.team && val(r.team.name).toLowerCase().indexOf(q) !== -1);
+    }
+    if (!filtered.length) {
+      elc.className = 'load-msg empty';
+      elc.textContent = 'No teams match your search.';
+      return;
+    }
+    elc.className = '';
+    elc.innerHTML = groupedStandingsHtml(filtered);
+  }
+
+  async function renderStandingsPage(force) {
+    if (!pageState.standings || force) {
+      pageState.standings = true;
+      setMsg('standings-body', 'loading', 'Loading...');
+      const jobs = [];
+      if (force || !store.nflStandings) {
+        jobs.push(ensureRows('nflStandings', '/nfl/standings', null, force)
+          .then(r => { standErrors.nfl = null; return r; })
+          .catch(e => { standErrors.nfl = e.message; return null; }));
+      }
+      if (force || !store.ncaaStandings) {
+        jobs.push(ensureRows('ncaaStandings', '/ncaa/standings', { league: NCAA_LEAGUE_ID, season: currentSeason() }, force)
+          .then(r => { standErrors.ncaa = null; return r; })
+          .catch(e => { standErrors.ncaa = e.message; return null; }));
+      }
+      if (jobs.length) { await Promise.all(jobs); }
+      buildStandConfOptions();
+    }
+    renderStandingsBody();
+  }
+
+  const standSearchEl = document.getElementById('stand-search');
+  if (standSearchEl) {
+    standSearchEl.addEventListener('input', () => { standQuery = standSearchEl.value.trim(); renderStandingsBody(); });
+  }
+  const standConfEl = document.getElementById('stand-conf');
+  if (standConfEl) {
+    standConfEl.addEventListener('change', () => { standConf = standConfEl.value; renderStandingsBody(); });
+  }
+  document.querySelectorAll('[data-stand-league]').forEach(b => {
+    b.addEventListener('click', () => {
+      standLeague = b.getAttribute('data-stand-league');
+      document.querySelectorAll('[data-stand-league]').forEach(x => x.classList.toggle('active', x === b));
+      standConf = 'all';
+      buildStandConfOptions();
+      renderStandingsBody();
+    });
+  });
+
+  // ================= Predictions (statistical analysis from live data) =================
+  // No prediction engine: every number below is derived in this browser from
+  // real backend responses (standings + completed game results). Missing inputs
+  // are reported as "Insufficient verified data for prediction" — never invented.
+  const predCtx = {};
+  let predFilter = 'upcoming';
+  let predSort = 'time';
+  let predQuery = '';
+
+  function findStandRowById(rows, teamId) {
+    const id = Number(teamId);
+    return (rows || []).find(r => r && r.team && Number(r.team.id) === id) || null;
+  }
+  function gamesPlayedOf(r) { return r ? (Number(r.won) || 0) + (Number(r.lost) || 0) + (Number(r.ties) || 0) : 0; }
+  function winPctOf(r) {
+    const g = gamesPlayedOf(r);
+    return g ? ((Number(r.won) || 0) + 0.5 * (Number(r.ties) || 0)) / g : null;
+  }
+  function diffPerGameOf(r) {
+    const g = gamesPlayedOf(r);
+    if (!g || !r.points) { return null; }
+    const f = Number(r.points.for), a = Number(r.points.against);
+    if (isNaN(f) || isNaN(a)) { return null; }
+    return (f - a) / g;
+  }
+  function avgOf(arr) { return arr.length ? arr.reduce((x, y) => x + y, 0) / arr.length : null; }
+  function fmt1(x) { return (x === null || x === undefined || isNaN(x)) ? '—' : (Math.round(x * 10) / 10).toFixed(1); }
+  function fmtRec(r) {
+    if (!r) { return null; }
+    const w = Number(r.won) || 0, l = Number(r.lost) || 0, t = Number(r.ties) || 0;
+    if (!gamesPlayedOf(r)) { return null; }
+    return w + '-' + l + '-' + t;
+  }
+  function tsOfItem(item) {
+    return (item && item.game && item.game.date && typeof item.game.date.timestamp === 'number') ? item.game.date.timestamp : 0;
+  }
+
+  function buildPredContext(rows, standRows, league) {
+    const rowByTeam = new Map();
+    (standRows || []).forEach(r => {
+      if (r && r.team && r.team.id !== undefined && r.team.id !== null) { rowByTeam.set(Number(r.team.id), r); }
+    });
+    const resultsByTeam = new Map();
+    const upcoming = [];
+    (rows || []).forEach(item => {
+      const t = item && item.teams;
+      if (!t || !t.home || !t.away) { return; }
+      const st = item.game && item.game.status && item.game.status.short;
+      if (FINISHED_STATUSES.indexOf(st) !== -1) {
+        const sh = item.scores && item.scores.home ? Number(item.scores.home.total) : null;
+        const sa = item.scores && item.scores.away ? Number(item.scores.away.total) : null;
+        if (sh === null || isNaN(sh) || sa === null || isNaN(sa)) { return; }
+        const push = (id, my, opp, oppName) => {
+          if (!resultsByTeam.has(id)) { resultsByTeam.set(id, []); }
+          resultsByTeam.get(id).push({
+            win: my > opp, my: my, opp: opp, oppName: oppName,
+            date: item.game.date && item.game.date.date, ts: tsOfItem(item)
+          });
+        };
+        push(Number(t.home.id), sh, sa, t.away.name);
+        push(Number(t.away.id), sa, sh, t.home.name);
+        return;
+      }
+      upcoming.push({ item: item, league: league });
+    });
+    upcoming.sort((a, b) => tsOfItem(a.item) - tsOfItem(b.item));
+    resultsByTeam.forEach(list => list.sort((a, b) => b.ts - a.ts));
+    return { rowByTeam: rowByTeam, resultsByTeam: resultsByTeam, upcoming: upcoming };
+  }
+
+  function formRateOf(res) {
+    const last = res.slice(0, 5);
+    return last.length ? last.filter(r => r.win).length / last.length : null;
+  }
+
+  function coverageOf(entry) {
+    const ctx = predCtx[entry.league === 'NFL' ? 'nfl' : 'ncaa'];
+    const t = entry.item.teams;
+    const hasStandPair = !!(ctx.rowByTeam.get(Number(t.home.id)) && ctx.rowByTeam.get(Number(t.away.id)));
+    const hRes = ctx.resultsByTeam.get(Number(t.home.id)) || [];
+    const aRes = ctx.resultsByTeam.get(Number(t.away.id)) || [];
+    const hasResPair = hRes.length > 0 && aRes.length > 0;
+    if (hasStandPair && hasResPair) { return 'high'; }
+    if (!hasStandPair && !hasResPair) { return 'insufficient'; }
+    return 'partial';
+  }
+
+  function coverageBadge(coverage) {
+    if (coverage === 'high') { return '<span class="cov cov-high">HIGH DATA COVERAGE</span>'; }
+    if (coverage === 'partial') { return '<span class="cov cov-partial">PARTIAL DATA</span>'; }
+    return '<span class="cov cov-insuff">INSUFFICIENT DATA</span>';
+  }
+
+  function buildAnalysis(entry) {
+    const ctx = predCtx[entry.league === 'NFL' ? 'nfl' : 'ncaa'];
+    const item = entry.item;
+    const home = item.teams.home, away = item.teams.away;
+    const hId = Number(home.id), aId = Number(away.id);
+    const hRow = ctx.rowByTeam.get(hId) || null;
+    const aRow = ctx.rowByTeam.get(aId) || null;
+    const hRes = ctx.resultsByTeam.get(hId) || [];
+    const aRes = ctx.resultsByTeam.get(aId) || [];
+    const used = [];
+    const sections = [];
+
+    const hasStandPair = !!(hRow && aRow);
+    const hasResPair = hRes.length > 0 && aRes.length > 0;
+    const coverage = hasStandPair && hasResPair ? 'high'
+      : (!hasStandPair && !hasResPair ? 'insufficient' : 'partial');
+
+    // --- Game winner analysis ---
+    const hWin = winPctOf(hRow), aWin = winPctOf(aRow);
+    const hDiff = diffPerGameOf(hRow), aDiff = diffPerGameOf(aRow);
+    const hForm = formRateOf(hRes), aForm = formRateOf(aRes);
+    const metrics = [];
+    if (hWin !== null && aWin !== null) { metrics.push({ name: 'win percentage', h: hWin, a: aWin }); }
+    if (hDiff !== null && aDiff !== null) { metrics.push({ name: 'points differential per game', h: hDiff, a: aDiff }); }
+    if (hForm !== null && aForm !== null) { metrics.push({ name: 'last-5 form', h: hForm, a: aForm }); }
+    let winnerHtml;
+    if (metrics.length >= 2) {
+      if (metrics.some(m => m.name !== 'last-5 form')) { used.push('Standings record & points differential'); }
+      if (metrics.some(m => m.name === 'last-5 form')) { used.push('Completed-game results (recent form)'); }
+      let hCount = 0, aCount = 0;
+      metrics.forEach(m => { if (m.h > m.a) { hCount++; } else if (m.a > m.h) { aCount++; } });
+      if (hCount !== aCount) {
+        const leanName = hCount > aCount ? home.name : away.name;
+        const leanCount = Math.max(hCount, aCount);
+        let confCls, confLbl;
+        if (leanCount === metrics.length && metrics.length >= 3) { confCls = 'pill-pass'; confLbl = 'High'; }
+        else if (leanCount > metrics.length / 2) { confCls = 'pill-nodata'; confLbl = 'Moderate'; }
+        else { confCls = 'pill-idle'; confLbl = 'Low'; }
+        winnerHtml = '<div class="pred-body">Statistical lean: <strong>' + esc(val(leanName)) + '</strong> — favored by ' +
+          leanCount + ' of ' + metrics.length + ' comparison metrics (' + metrics.map(m => m.name).join(', ') + ').' +
+          '<span class="pill ' + confCls + ' conf">Confidence: ' + confLbl + '</span></div>' +
+          '<div class="pred-note">A statistical lean computed from current season data — not a guaranteed outcome.</div>';
+      } else {
+        winnerHtml = '<div class="pred-body">Comparison metrics are evenly split — no statistical lean from current data.</div>' +
+          '<div class="pred-note">Metrics compared: ' + metrics.map(m => m.name).join(', ') + '.</div>';
+      }
+    } else {
+      winnerHtml = '<div class="pred-body insufficient">Insufficient verified data for prediction</div>' +
+        '<div class="pred-note">Needs standings records and/or completed-game results for both teams. Nothing is estimated in their place.</div>';
+    }
+    sections.push('<div class="pred-section"><div class="pred-label">GAME WINNER ANALYSIS</div>' + winnerHtml + '</div>');
+
+    // --- Score range analysis (estimate from completed-game averages) ---
+    if (hasResPair) {
+      used.push('Recent scoring averages (completed games)');
+      const expH = Math.round((avgOf(hRes.map(r => r.my)) + avgOf(aRes.map(r => r.opp))) / 2);
+      const expA = Math.round((avgOf(aRes.map(r => r.my)) + avgOf(hRes.map(r => r.opp))) / 2);
+      const rng = v => Math.max(3, Math.round(v * 0.15));
+      sections.push('<div class="pred-section"><div class="pred-label">SCORE RANGE ANALYSIS</div>' +
+        '<div class="pred-body">' + esc(val(home.name)) + ' &#8776; ' + expH + ' points (range ' + (expH - rng(expH)) + '&ndash;' + (expH + rng(expH)) + ') &middot; ' +
+        esc(val(away.name)) + ' &#8776; ' + expA + ' points (range ' + (expA - rng(expA)) + '&ndash;' + (expA + rng(expA)) + ')</div>' +
+        '<div class="pred-note">Estimate from scoring averages in completed games — not a guaranteed score.</div></div>');
+    }
+
+    // --- Team strength comparison (from backend standings rows) ---
+    if (hasStandPair) {
+      used.push('Standings position & streak');
+      const pfG = r => { const g = gamesPlayedOf(r); return (g && r.points && !isNaN(Number(r.points.for))) ? Number(r.points.for) / g : null; };
+      const paG = r => { const g = gamesPlayedOf(r); return (g && r.points && !isNaN(Number(r.points.against))) ? Number(r.points.against) / g : null; };
+      const cmpRow = (label, hv, av) => {
+        if (hv === '—' && av === '—') { return ''; }
+        if (hv === '—') { hv = 'N/A'; }
+        if (av === '—') { av = 'N/A'; }
+        return '<tr><td>' + label + '</td><td>' + hv + '</td><td>' + av + '</td></tr>';
+      };
+      sections.push('<div class="pred-section"><div class="pred-label">TEAM STRENGTH COMPARISON</div>' +
+        '<div class="table-wrap"><table class="pred-cmp"><thead><tr><th></th><th>' + esc(val(home.name)) + '</th><th>' + esc(val(away.name)) + '</th></tr></thead><tbody>' +
+        cmpRow('Record', fmtRec(hRow) || '—', fmtRec(aRow) || '—') +
+        cmpRow('Win %', hWin === null ? '—' : Math.round(hWin * 1000) / 10 + '%', aWin === null ? '—' : Math.round(aWin * 1000) / 10 + '%') +
+        cmpRow('Points for / game', fmt1(pfG(hRow)), fmt1(pfG(aRow))) +
+        cmpRow('Points against / game', fmt1(paG(hRow)), fmt1(paG(aRow))) +
+        cmpRow('Differential / game', fmt1(hDiff), fmt1(aDiff)) +
+        cmpRow('Division position', val(hRow.position) || '—', val(aRow.position) || '—') +
+        cmpRow('Streak', val(hRow.streak) || '—', val(aRow.streak) || '—') +
+        '</tbody></table></div></div>');
+    }
+
+    // --- Recent-form comparison (real completed results) ---
+    if (hRes.length || aRes.length) {
+      used.push('Completed-game results (recent form)');
+      const col = (team, res) => {
+        const last = res.slice(0, 5);
+        let inner;
+        if (last.length) {
+          inner = last.map(r => '<span class="formchip ' + (r.win ? 'w' : 'l') + '">' + (r.win ? 'W' : 'L') + ' ' + r.my + '-' + r.opp + '</span>').join('') +
+            '<span class="r">Avg scored ' + fmt1(avgOf(res.map(r => r.my))) + ' · allowed ' + fmt1(avgOf(res.map(r => r.opp))) + ' (completed games)</span>';
+        } else {
+          inner = '<span class="r insufficient">Insufficient verified data.</span>';
+        }
+        return '<div class="pred-formcol"><div class="t">' + esc(val(team.name)) + '</div>' + inner + '</div>';
+      };
+      sections.push('<div class="pred-section"><div class="pred-label">RECENT-FORM COMPARISON</div>' +
+        '<div class="pred-formrow">' + col(home, hRes) + col(away, aRes) + '</div></div>');
+    }
+
+    return { sectionsHtml: sections.join(''), usedItems: Array.from(new Set(used)), coverage: coverage };
+  }
+
+  function renderPredCard(entry) {
+    const item = entry.item;
+    const game = item.game || {};
+    const home = item.teams.home, away = item.teams.away;
+    const ctx = predCtx[entry.league === 'NFL' ? 'nfl' : 'ncaa'];
+    const recSpan = id => {
+      const row = ctx.rowByTeam.get(Number(id));
+      const r = fmtRec(row);
+      if (r) { return '<span class="pred-trec">' + esc(r) + '</span>'; }
+      const res = ctx.resultsByTeam.get(Number(id)) || [];
+      if (res.length) {
+        const w = res.filter(x => x.win).length;
+        return '<span class="pred-trec">form ' + w + '-' + (res.length - w) + '</span>';
+      }
+      return '';
+    };
+    const logo = l => l ? '<img src="' + esc(l) + '" alt="" loading="lazy" onerror="this.classList.add(\'logo-broken\')">' : '';
+    const meta = [];
+    if (game.date && game.date.date) { meta.push(esc(game.date.date) + (game.date.time ? ' ' + esc(game.date.time) + ' UTC' : '')); }
+    if (game.stage) { meta.push(esc(game.stage) + (game.week ? ' · ' + esc(String(game.week)) : '')); }
+    const a = buildAnalysis(entry);
+
+    const analysisInner = a.coverage === 'insufficient'
+      ? '<div class="pred-body insufficient">Insufficient verified data for prediction</div>' +
+        '<div class="pred-note">No standings records or completed-game results are available for these teams yet. Nothing is invented in their place.</div>'
+      : a.sectionsHtml;
+    const duItems = a.coverage === 'insufficient'
+      ? ['Insufficient verified data']
+      : ['Real backend game data (teams, schedule, status)'].concat(a.usedItems);
+
+    return '<article class="pred-card" tabindex="0" role="button" data-game-id="' + esc(val(game.id)) +
+      '" aria-label="Analysis: ' + esc(val(away.name)) + ' at ' + esc(val(home.name)) + '. Activate to open game details.">' +
+      '<div class="pred-block match">' +
+        '<div class="pred-block-title">MATCH</div>' +
+        '<div class="pred-head">' +
+          '<div class="pred-side">' + logo(away.logo) + '<span class="pred-tname" data-team-id="' + esc(val(away.id)) + '">' + esc(val(away.name)) + '</span>' + recSpan(away.id) + '</div>' +
+          '<div class="pred-mid"><span>' + meta.join(' · ') + '</span>' + statusBadge(game.status) + '</div>' +
+          '<div class="pred-side right"><span class="pred-tname" data-team-id="' + esc(val(home.id)) + '">' + esc(val(home.name)) + '</span>' + recSpan(home.id) + logo(home.logo) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pred-block">' +
+        '<div class="pred-block-head"><span class="pred-block-title">ANALYSIS</span>' + coverageBadge(a.coverage) + '</div>' +
+        analysisInner +
+      '</div>' +
+      '<div class="pred-block">' +
+        '<div class="pred-block-title">DATA USED</div>' +
+        '<ul class="pred-du-list">' + duItems.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' +
+      '</div>' +
+    '</article>';
+  }
+
+  function renderPredList() {
+    const elc = document.getElementById('pred-list');
+    if (!elc) { return; }
+    elc.className = 'pred-list';
+    const nfl = predCtx.nfl ? predCtx.nfl.upcoming : [];
+    const ncaa = predCtx.ncaa ? predCtx.ncaa.upcoming : [];
+    let entries;
+    if (predFilter === 'nfl') { entries = nfl; }
+    else if (predFilter === 'cfb') { entries = ncaa; }
+    else {
+      const both = nfl.concat(ncaa);
+      if (predFilter === 'today') {
+        const today = localToday();
+        entries = both.filter(e => e.item.game && e.item.game.date && e.item.game.date.date === today);
+      } else {
+        entries = both;
+      }
+    }
+    if (predQuery) {
+      const q = predQuery.toLowerCase();
+      entries = entries.filter(e => {
+        const t = e.item.teams;
+        return ((t.home.name + ' ' + t.away.name).toLowerCase().indexOf(q) !== -1);
+      });
+    }
+    if (predSort === 'coverage') {
+      const rank = { high: 0, partial: 1, insufficient: 2 };
+      entries = entries.slice().sort((x, y) => {
+        const d = rank[coverageOf(x)] - rank[coverageOf(y)];
+        return d !== 0 ? d : tsOfItem(x.item) - tsOfItem(y.item);
+      });
+    }
+    const countEl = document.getElementById('pred-count');
+    if (countEl) {
+      countEl.textContent = entries.length + ' game' + (entries.length === 1 ? '' : 's') +
+        (predQuery ? ' matching "' + predQuery + '"' : '') +
+        ' · sorted by ' + (predSort === 'coverage' ? 'data coverage' : 'game time') +
+        ' · analysis from live standings and completed-game results.';
+    }
+    if (!entries.length) { emptyMsg('pred-list'); return; }
+    const cap = 12;
+    const shown = expandedLists.has('pred-list') ? entries : entries.slice(0, cap);
+    elc.innerHTML = shown.map(renderPredCard).join('');
+    const moreBtn = document.getElementById('pred-list-more');
+    if (moreBtn) {
+      if (entries.length > cap) {
+        moreBtn.hidden = false;
+        moreBtn.textContent = expandedLists.has('pred-list') ? 'Show less' : 'Show all (' + entries.length + ')';
+      } else { moreBtn.hidden = true; }
+    }
+  }
+
+  async function renderPredictionsPage(force) {
+    if (pageState.predictions && !force) { return; }
+    pageState.predictions = true;
+    setMsg('pred-list', 'loading', 'Loading...');
+    try {
+      const season = currentSeason();
+      const results = await Promise.all([
+        ensureRows('nflGames', '/nfl/games', null, force),
+        ensureRows('nflStandings', '/nfl/standings', null, force),
+        ensureRows('ncaaGames', '/ncaa/games', { league: NCAA_LEAGUE_ID, season: season }, force),
+        ensureRows('ncaaStandings', '/ncaa/standings', { league: NCAA_LEAGUE_ID, season: season }, force)
+      ]);
+      predCtx.nfl = buildPredContext(results[0], results[1], 'NFL');
+      predCtx.ncaa = buildPredContext(results[2], results[3], 'NCAA');
+      listRenderers['pred-list'] = renderPredList;
+      renderPredList();
+    } catch (err) { failMsg('pred-list', err); }
+  }
+
+  const predSearch = document.getElementById('pred-search');
+  if (predSearch) {
+    predSearch.addEventListener('input', () => {
+      predQuery = predSearch.value.trim();
+      renderPredList();
+    });
+  }
+
+  async function renderHomePage(force) {
+    if (pageState.home && !force) { return; }
+    pageState.home = true;
+
+    // Today's Games — real games dated today across NFL + NCAA feeds.
+    (async () => {
+      try {
+        const today = localToday();
+        const [nfl, ncaa] = await Promise.all([
+          ensureRows('nflGames', '/nfl/games', null, force),
+          ensureRows('ncaaGames', '/ncaa/games', { league: NCAA_LEAGUE_ID, season: currentSeason() }, force)
+        ]);
+        const todays = nfl.concat(ncaa)
+          .filter(g => g && g.game && g.game.date && g.game.date.date === today)
+          .sort((a, b) => ((a.game.date.timestamp || 0) - (b.game.date.timestamp || 0)));
+        listRenderers['home-today'] = () => renderGameList('home-today', todays, '');
+        listRenderers['home-today']();
+      } catch (err) { failMsg('home-today', err); }
+    })();
+
+    // Upcoming NFL games.
+    (async () => {
+      try {
+        const rows = await ensureRows('nflGames', '/nfl/games', null, force);
+        const parts = splitGames(rows);
+        listRenderers['home-upcoming'] = () => renderGameList('home-upcoming', parts.upcoming, 'NFL');
+        listRenderers['home-upcoming']();
+      } catch (err) { failMsg('home-upcoming', err); }
+    })();
+
+    // College football games.
+    (async () => {
+      try {
+        const rows = await ensureRows('ncaaGames', '/ncaa/games', { league: NCAA_LEAGUE_ID, season: currentSeason() }, force);
+        const parts = splitGames(rows);
+        listRenderers['home-cfb'] = () => renderGameList('home-cfb', parts.upcoming, 'NCAA');
+        listRenderers['home-cfb']();
+      } catch (err) { failMsg('home-cfb', err); }
+    })();
+
+    // NFL standings highlights — top rows of the live table.
+    (async () => {
+      try {
+        const rows = await ensureRows('nflStandings', '/nfl/standings', null, force);
+        const elc = document.getElementById('home-standings-body');
+        if (!rows.length) { emptyMsg('home-standings-body'); return; }
+        elc.className = '';
+        elc.innerHTML = standingsTableHtml(sortStandings(rows).slice(0, 8));
+      } catch (err) { failMsg('home-standings-body', err); }
+    })();
+  }
+
+  function forceRender(page) {
+    if (page === 'home') { renderHomePage(true); }
+    else if (page === 'nfl') { renderNFLPage(true); }
+    else if (page === 'cfb') { renderCFBPage(true); }
+    else if (page === 'standings') { renderStandingsPage(true); }
+  }
+
+  function showOverview(overviewId, viewId) {
+    const o = document.getElementById(overviewId);
+    if (o) { o.style.display = 'flex'; }
+  }
+
+  // ---- Team details -----------------------------------------------------
+  async function openTeamDetails(teamId) {
+    if (currentPage !== 'team' && currentPage !== 'game') { returnPage = currentPage; returnScrollY = window.scrollY; }
+    currentPage = 'team';
+    showPage('team', { subview: true });
+    const idNum = Number(teamId);
+    const infoCard = document.getElementById('team-info-card');
+    const standCard = document.getElementById('team-standings-card');
+    const formCard = document.getElementById('team-form-card');
+    const rosterCard = document.getElementById('team-roster-card');
+
+    // Best-effort: make sure the teams lists are available so the league can
+    // be detected and the info card can use real team fields.
+    const fillJobs = [];
+    if (!store.nflTeams) { fillJobs.push(ensureRows('nflTeams', '/nfl/teams', null, false).catch(() => null)); }
+    if (!store.ncaaTeams) { fillJobs.push(ensureRows('ncaaTeams', '/ncaa/teams', { league: NCAA_LEAGUE_ID, season: currentSeason() }, false).catch(() => null)); }
+    if (fillJobs.length) { await Promise.all(fillJobs); }
+
+    let league = 'NFL';
+    let team = (store.nflTeams || []).find(t => Number(t.id) === idNum) || null;
+    if (!team) {
+      const n = (store.ncaaTeams || []).find(t => Number(t.id) === idNum) || null;
+      if (n) { league = 'NCAA'; team = n; }
+    }
+    const standRowsArr = (league === 'NFL' ? store.nflStandings : store.ncaaStandings) || [];
+    let standRow = findStandRowById(standRowsArr, idNum);
+    if (!standRow) {
+      // A team may exist in the other league's standings; check both real sources.
+      const alt = (league === 'NFL' ? store.ncaaStandings : store.nflStandings) || [];
+      const altRow = findStandRowById(alt, idNum);
+      if (altRow) { league = league === 'NFL' ? 'NCAA' : 'NFL'; standRow = altRow; }
+    }
+    if (!team && standRow && standRow.team) { team = { id: standRow.team.id, name: standRow.team.name, logo: standRow.team.logo }; }
+
+    if (!team) {
+      infoCard.className = 'card';
+      infoCard.innerHTML = '<div class="load-msg error">Unable to load data. Team not found in the live backend responses.</div>';
+      standCard.hidden = true; formCard.hidden = true; rosterCard.hidden = true;
+      setMsg('team-sched-up-body', 'empty', 'No data available.');
+      setMsg('team-sched-done-body', 'empty', 'No data available.');
+      return;
+    }
+
+    const logo = team.logo ? '<img src="' + esc(team.logo) + '" alt="" onerror="this.classList.add(\'logo-broken\')">' : '';
+    const infoItems = [
+      detailItem('Code', team.code), detailItem('City', team.city), detailItem('Coach', team.coach),
+      detailItem('Owner', team.owner), detailItem('Stadium', team.stadium), detailItem('Established', team.established),
+      detailItem('Country', team.country && team.country.name)
+    ].join('');
+    infoCard.className = 'card';
+    infoCard.innerHTML = '<div class="team-hero">' + logo +
+      '<div><h3 class="card-title" style="margin-bottom:0">' + esc(val(team.name)) + '</h3>' +
+      '<p class="lede" style="margin-top:4px">' + esc(league) + ' team · id ' + esc(val(team.id)) + '</p></div></div>' +
+      (infoItems ? '<div class="details-grid">' + infoItems + '</div>' : '');
+
+    // Standings card — hidden entirely when the backend returns no row for this team.
+    if (standRow) {
+      standCard.hidden = false;
+      const gp = gamesPlayedOf(standRow);
+      const wp = gp ? ((Number(standRow.won) || 0) + 0.5 * (Number(standRow.ties) || 0)) / gp : null;
+      const pts = standRow.points || {};
+      document.getElementById('team-standings-body').className = '';
+      document.getElementById('team-standings-body').innerHTML = '<div class="details-grid" style="margin-top:0">' +
+        detailItem('Conference', standRow.conference) +
+        detailItem('Division', standRow.division) +
+        detailItem('Position', standRow.position) +
+        detailItem('Record', fmtRec(standRow)) +
+        detailItem('Win %', wp === null ? '' : (wp * 100).toFixed(1) + '%') +
+        detailItem('Points', (pts.for !== undefined && pts.for !== null) ? 'For ' + val(pts.for) + ' · Against ' + val(pts.against) + ' · Diff ' + val(pts.difference) : '') +
+        detailItem('Streak', standRow.streak) +
+      '</div>';
+    } else { standCard.hidden = true; }
+
+    renderTeamSchedule(idNum, league);
+
+    // Roster route exists for NFL only; hide the card for other leagues.
+    if (league === 'NFL') { rosterCard.hidden = false; renderRoster(teamId); }
+    else { rosterCard.hidden = true; }
+  }
+
+  function teamResultsOf(idNum, league) {
+    const rows = (league === 'NFL' ? store.nflGames : store.ncaaGames) || [];
+    const out = [];
+    rows.forEach(g => {
+      const t = g && g.teams;
+      if (!t || !t.home || !t.away) { return; }
+      if (FINISHED_STATUSES.indexOf(g.game && g.game.status && g.game.status.short) === -1) { return; }
+      const sh = g.scores && g.scores.home ? Number(g.scores.home.total) : null;
+      const sa = g.scores && g.scores.away ? Number(g.scores.away.total) : null;
+      if (sh === null || sa === null || isNaN(sh) || isNaN(sa)) { return; }
+      const isHome = Number(t.home.id) === idNum;
+      const isAway = Number(t.away.id) === idNum;
+      if (!isHome && !isAway) { return; }
+      const my = isHome ? sh : sa;
+      const opp = isHome ? sa : sh;
+      out.push({ win: my > opp, my: my, opp: opp, ts: tsOfItem(g) });
+    });
+    out.sort((a, b) => b.ts - a.ts);
+    return out;
+  }
+
+  function renderTeamForm(idNum, league) {
+    const cardEl = document.getElementById('team-form-card');
+    const body = document.getElementById('team-form-body');
+    const res = teamResultsOf(idNum, league);
+    if (!res.length) { cardEl.hidden = true; return; }
+    cardEl.hidden = false;
+    body.innerHTML = res.slice(0, 5).map(r =>
+      '<span class="formchip ' + (r.win ? 'w' : 'l') + '">' + (r.win ? 'W' : 'L') + ' ' + r.my + '-' + r.opp + '</span>'
+    ).join('') +
+    '<div class="pred-note">Last ' + Math.min(5, res.length) + ' completed games · avg scored ' + fmt1(avgOf(res.map(r => r.my))) +
+    ' · allowed ' + fmt1(avgOf(res.map(r => r.opp))) + '</div>';
+  }
+
+  async function renderTeamSchedule(idNum, league) {
+    setMsg('team-sched-up-body', 'loading', 'Loading...');
+    setMsg('team-sched-done-body', 'loading', 'Loading...');
+    try {
+      const isNfl = league === 'NFL';
+      const rows = await ensureRows(
+        isNfl ? 'nflGames' : 'ncaaGames',
+        isNfl ? '/nfl/games' : '/ncaa/games',
+        isNfl ? null : { league: NCAA_LEAGUE_ID, season: currentSeason() },
+        false
+      );
+      renderTeamForm(idNum, league);
+      const mine = rows.filter(g => g && g.teams && (
+        Number(g.teams.home && g.teams.home.id) === idNum || Number(g.teams.away && g.teams.away.id) === idNum));
+      const parts = splitGames(mine);
+      const tag = isNfl ? 'NFL' : 'NCAA';
+      listRenderers['team-sched-up-body'] = () => renderGameList('team-sched-up-body', parts.upcoming, tag);
+      listRenderers['team-sched-done-body'] = () => renderGameList('team-sched-done-body', parts.finished, tag);
+      listRenderers['team-sched-up-body']();
+      listRenderers['team-sched-done-body']();
+    } catch (err) { failMsg('team-sched-up-body', err); failMsg('team-sched-done-body', err); }
+  }
+
+  async function renderRoster(teamId) {
+    setMsg('team-roster-body', 'loading', 'Loading...');
+    try {
+      const rows = await ensureRows('roster-' + teamId, '/nfl/roster', { team: String(teamId), season: currentSeason() });
+      if (!rows.length) { emptyMsg('team-roster-body'); return; }
+      const elc = document.getElementById('team-roster-body');
+      elc.className = '';
+      elc.innerHTML = '<div class="table-wrap"><table class="data-table"><thead><tr>' +
+        ['#', 'Name', 'Pos', 'Group', 'Age', 'Ht', 'Wt', 'College', 'Exp'].map(h => '<th>' + h + '</th>').join('') +
+        '</tr></thead><tbody>' +
+        rows.map(p => '<tr>' +
+          '<td>' + esc(val(p.number)) + '</td>' +
+          '<td>' + esc(val(p.name)) + '</td>' +
+          '<td>' + esc(val(p.position)) + '</td>' +
+          '<td>' + esc(val(p.group)) + '</td>' +
+          '<td>' + esc(val(p.age)) + '</td>' +
+          '<td>' + esc(val(p.height)) + '</td>' +
+          '<td>' + esc(val(p.weight)) + '</td>' +
+          '<td>' + esc(val(p.college)) + '</td>' +
+          '<td>' + esc(val(p.experience)) + '</td>' +
+        '</tr>').join('') +
+        '</tbody></table></div>';
+    } catch (err) { failMsg('team-roster-body', err); }
+  }
+
+  // ---- Game details -----------------------------------------------------
+  async function openGameDetails(gameId) {
+    if (currentPage !== 'team' && currentPage !== 'game') { returnPage = currentPage; returnScrollY = window.scrollY; }
+    currentPage = 'game';
+    showPage('game', { subview: true });
+    const elc = document.getElementById('game-content');
+    elc.innerHTML = '<div class="card"><div class="load-msg">Loading...</div></div>';
+    try {
+      const data = await apiGet('/nfl/games', { id: String(gameId) });
+      const item = rowsOf(data)[0];
+      if (!item) { elc.innerHTML = '<div class="card"><div class="load-msg empty">No data available.</div></div>'; return; }
+      const game = item.game || {};
+      const home = (item.teams && item.teams.home) || {};
+      const away = (item.teams && item.teams.away) || {};
+      const sc = item.scores || {};
+      const st = game.status || {};
+      const lg = item.league || {};
+      const logo = l => l ? '<img src="' + esc(l) + '" alt="" onerror="this.classList.add(\'logo-broken\')">' : '';
+      const total = t => (t && typeof t.total === 'number') ? esc(String(t.total)) : '—';
+      const started = sc.home && typeof sc.home.total === 'number';
+
+      let quartersHtml = '';
+      if (started) {
+        const qDefs = [['quarter_1', 'Q1'], ['quarter_2', 'Q2'], ['quarter_3', 'Q3'], ['quarter_4', 'Q4'], ['overtime', 'OT']];
+        const qRows = qDefs.filter(qd =>
+          ((sc.home && sc.home[qd[0]]) !== null && (sc.home && sc.home[qd[0]]) !== undefined) ||
+          ((sc.away && sc.away[qd[0]]) !== null && (sc.away && sc.away[qd[0]]) !== undefined))
+          .map(qd => '<tr><td>' + qd[1] + '</td><td>' + esc(val(sc.home && sc.home[qd[0]])) + '</td><td>' + esc(val(sc.away && sc.away[qd[0]])) + '</td></tr>').join('');
+        quartersHtml = '<div class="card"><h3 class="card-title">Scores</h3><div class="table-wrap"><table class="data-table"><thead><tr>' +
+          '<th>Quarter</th><th>' + esc(val(home.name)) + '</th><th>' + esc(val(away.name)) + '</th></tr></thead><tbody>' +
+          qRows +
+          '<tr><td><strong>Total</strong></td><td><strong>' + total(sc.home) + '</strong></td><td><strong>' + total(sc.away) + '</strong></td></tr>' +
+          '</tbody></table></div></div>';
+      }
+
+      elc.innerHTML =
+        '<div class="card">' +
+          '<div class="game-big">' +
+            '<div class="team-block">' + logo(home.logo) + '<span class="team-name">' + esc(val(home.name)) + '</span><span class="total">' + total(sc.home) + '</span></div>' +
+            '<div class="middle-col">' + statusBadge(st) + '<span class="team-sub">vs</span></div>' +
+            '<div class="team-block">' + logo(away.logo) + '<span class="team-name">' + esc(val(away.name)) + '</span><span class="total">' + total(sc.away) + '</span></div>' +
+          '</div>' +
+          '<div class="details-grid">' +
+            detailItem('Game ID', game.id) +
+            detailItem('Date', game.date && game.date.date) +
+            detailItem('Time', game.date && val(game.date.time) ? val(game.date.time) + (game.date.timezone ? ' (' + game.date.timezone + ')' : '') : '') +
+            detailItem('Venue', game.venue ? [game.venue.name, game.venue.city].filter(Boolean).join(', ') : '') +
+            detailItem('Stage', game.stage ? game.stage + (game.week ? ' · ' + game.week : '') : '') +
+            detailItem('League', lg.name ? lg.name + (lg.season ? ' · ' + lg.season : '') : '') +
+          '</div>' +
+        '</div>' +
+        quartersHtml +
+        '<div class="card"><details class="raw"><summary>Raw API response (real data)</summary><pre>' +
+          esc(trunc(JSON.stringify(item, null, 2), 4000)) +
+        '</pre></details></div>';
+    } catch (err) {
+      elc.innerHTML = '<div class="card"><div class="load-msg error">Unable to load data. ' + esc((err && err.message) || '') + '</div></div>';
+    }
+  }
+
+  // ================= Live Data Verification =================
+  // ---- Endpoint map used by Live Data Verification -------------------
+  const CHECKS = [
+    { id: 'nfl-teams',        title: 'NFL Teams',        path: '/nfl/teams' },
+    { id: 'nfl-games',        title: 'NFL Games',        path: '/nfl/games',
+      note: 'The backend applies its own default season; no extra parameter needed.' },
+    { id: 'nfl-standings',    title: 'NFL Standings',    path: '/nfl/standings',
+      note: 'The backend applies its own default season; no extra parameter needed.' },
+    { id: 'ncaa-teams',       title: 'NCAA Teams',       path: '/ncaa/teams',
+      note: 'league=2 (college football) — required by the backend; value verified against the live API.' },
+    { id: 'ncaa-games',       title: 'NCAA Games',       path: '/ncaa/games',
+      note: 'league=2 + season=<current year>, required by the backend; season resolved at run time.' },
+    { id: 'nfl-roster',       title: 'NFL Roster',       path: '/nfl/roster', depends: true,
+      note: 'team=<Baltimore Ravens id> resolved live from the /nfl/teams response, plus season=<current year> (both required by the backend).' },
+    { id: 'nfl-game-details', title: 'NFL Game Details', path: '/nfl/games', depends: true,
+      note: 'id=<real game id> resolved live from the /nfl/games response.' }
+  ];
+
+  function trunc(s, n) { return s.length > n ? s.slice(0, n) + '\n… (truncated)' : s; }
+
+  function describeBackendErrors(errs) {
+    if (!errs) { return ''; }
+    if (Array.isArray(errs)) {
+      return errs.length ? errs.map(e => (e !== null && typeof e === 'object' ? JSON.stringify(e) : String(e))).join('; ') : '';
+    }
+    if (typeof errs === 'object') {
+      const keys = Object.keys(errs);
+      if (!keys.length) { return ''; }
+      return keys.map(k => {
+        const v = errs[k];
+        return k + ': ' + (v === null || typeof v === 'object' ? JSON.stringify(v) : String(v));
+      }).join('; ');
+    }
+    return String(errs);
+  }
+
+  function findRavensTeamId(data) {
+    if (!data || !Array.isArray(data.response)) { return null; }
+    const byName = data.response.find(t => t && typeof t.name === 'string' && t.name.toLowerCase().indexOf('baltimore ravens') !== -1);
+    const t = byName || data.response.find(t => t && (t.code === 'BAL' || t.city === 'Baltimore'));
+    return (t && t.id !== undefined && t.id !== null) ? t.id : null;
+  }
+
+  function findFirstGameId(data) {
+    if (!data || !Array.isArray(data.response)) { return null; }
+    for (const item of data.response) {
+      const g = item && item.game;
+      if (g && g.id !== undefined && g.id !== null) { return g.id; }
+    }
+    return null;
+  }
+
+  function buildRequestUrl(check, base, results) {
+    const root = base.replace(/\/+$/, '');
+    const params = new URLSearchParams();
+    if (check.id === 'ncaa-teams') {
+      params.set('league', NCAA_LEAGUE_ID);
+    } else if (check.id === 'ncaa-games') {
+      params.set('league', NCAA_LEAGUE_ID);
+      params.set('season', String(new Date().getFullYear()));
+    } else if (check.id === 'nfl-roster') {
+      const teamId = findRavensTeamId(results ? results['nfl-teams'] : null);
+      if (teamId === null) {
+        return { error: 'Could not resolve the Baltimore Ravens team id from the live /nfl/teams response (that check did not return usable data).' };
+      }
+      params.set('team', String(teamId));
+      params.set('season', String(new Date().getFullYear()));
+    } else if (check.id === 'nfl-game-details') {
+      const gameId = findFirstGameId(results ? results['nfl-games'] : null);
+      if (gameId === null) {
+        return { error: 'Could not resolve a game id from the live /nfl/games response (that check did not return usable data).' };
+      }
+      params.set('id', String(gameId));
+    }
+    const qs = params.toString();
+    return { url: root + check.path + (qs ? '?' + qs : '') };
+  }
+
+  async function runOne(check, base, results) {
+    const built = buildRequestUrl(check, base, results);
+    setPill(check.id, 'pill-busy', 'CHECKING');
+    document.getElementById('data-' + check.id).hidden = true;
+    if (built.error) {
+      document.getElementById('msg-' + check.id).textContent = built.error;
+      setPill(check.id, 'pill-error', 'REQUEST ERROR');
+      return 'error';
+    }
+    const url = built.url;
+    document.getElementById('msg-' + check.id).textContent = 'Contacting ' + url + ' …';
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    let res;
+    try {
+      res = await fetch(url, { signal: ctrl.signal, cache: 'no-store', headers: { 'Accept': 'application/json' } });
+    } catch (err) {
+      clearTimeout(timer);
+      const why = (err && err.name === 'AbortError') ? 'Request timed out after 10 s.' : ((err && err.message) || 'Network request failed.');
+      setPill(check.id, 'pill-error', 'REQUEST ERROR');
+      document.getElementById('msg-' + check.id).textContent = why + ' Requested: ' + url;
+      return 'error';
+    }
+    clearTimeout(timer);
+
+    let text = '';
+    try { text = await res.text(); } catch (e) { text = ''; }
+
+    if (!res.ok) {
+      setPill(check.id, 'pill-error', 'REQUEST ERROR');
+      document.getElementById('msg-' + check.id).textContent =
+        'HTTP ' + res.status + (res.statusText ? ' ' + res.statusText : '') +
+        (text.trim() ? ' — backend said: ' + trunc(text.trim().replace(/\s+/g, ' '), 240) : '') +
+        ' | Requested: ' + url;
+      const preErr = document.getElementById('data-' + check.id);
+      preErr.hidden = false;
+      preErr.textContent = trunc(text, 600) || '(empty error body)';
+      return 'error';
+    }
+    if (!text.trim()) {
+      setPill(check.id, 'pill-nodata', 'NO DATA');
+      document.getElementById('msg-' + check.id).textContent =
+        'HTTP ' + res.status + ' — request succeeded but the result was empty.';
+      return 'nodata';
+    }
+
+    let data;
+    try { data = JSON.parse(text); } catch (e) {
+      setPill(check.id, 'pill-error', 'REQUEST ERROR');
+      document.getElementById('msg-' + check.id).textContent =
+        'HTTP ' + res.status + ' — response was not valid JSON. | Requested: ' + url;
+      const pre = document.getElementById('data-' + check.id);
+      pre.hidden = false;
+      pre.textContent = trunc(text, 600);
+      return 'error';
+    }
+
+    // The Supabase proxy wraps the sports API in an envelope:
+    // { get, parameters, errors, results, response }. Judge data by the payload.
+    let payload = data;
+    let backendErrors = null;
+    if (data && typeof data === 'object' && !Array.isArray(data) && Object.prototype.hasOwnProperty.call(data, 'response')) {
+      payload = data.response;
+      backendErrors = Object.prototype.hasOwnProperty.call(data, 'errors') ? data.errors : null;
+    }
+
+    const payloadEmpty = payload === null || payload === undefined ||
+      (Array.isArray(payload) && payload.length === 0) ||
+      (typeof payload === 'object' && Object.keys(payload).length === 0);
+    if (payloadEmpty) {
+      setPill(check.id, 'pill-nodata', 'NO DATA');
+      const errs = describeBackendErrors(backendErrors);
+      document.getElementById('msg-' + check.id).textContent =
+        'HTTP ' + res.status + ' — request succeeded but no data was returned' +
+        (errs ? '. Backend reported: ' + errs : ' (empty result).');
+      const preEmpty = document.getElementById('data-' + check.id);
+      preEmpty.hidden = false;
+      preEmpty.textContent = trunc(JSON.stringify(data, null, 2), 800);
+      return 'nodata';
+    }
+
+    setPill(check.id, 'pill-pass', 'PASS');
+    const records = Array.isArray(payload) ? ' (' + payload.length + ' records)' : '';
+    document.getElementById('msg-' + check.id).textContent =
+      'HTTP ' + res.status + ' — valid JSON data received' + records + ' from ' + url;
+    const pre2 = document.getElementById('data-' + check.id);
+    pre2.hidden = false;
+    pre2.textContent = trunc(JSON.stringify(data, null, 2), 1600);
+    if (results) { results[check.id] = data; }
+    return 'pass';
+  }
+
+  const grid = document.getElementById('checks-grid');
+  const btnRun = document.getElementById('btn-run');
+  const overallPill = document.getElementById('overall-pill');
+  const overallText = document.getElementById('overall-text');
+
+  function buildCards() {
+    grid.innerHTML = CHECKS.map(c => (
+      '<div class="card check" id="check-' + c.id + '">' +
+        '<div class="check-head"><h4>' + esc(c.title) + '</h4>' +
+        '<span class="pill pill-idle" id="pill-' + c.id + '">IDLE</span></div>' +
+        '<code class="check-path">GET ' + esc(c.path) + '</code>' +
+        (c.note ? '<p class="check-note">' + esc(c.note) + '</p>' : '') +
+        '<p class="check-msg" id="msg-' + c.id + '">Not run yet.</p>' +
+        '<pre class="check-data" id="data-' + c.id + '" hidden></pre>' +
+      '</div>'
+    )).join('');
+  }
+
+  function setPill(id, cls, label) {
+    const p = document.getElementById('pill-' + id);
+    p.className = 'pill ' + cls;
+    p.textContent = label;
+  }
+
+  btnRun.addEventListener('click', async () => {
+    if (!state.backendUrl) {
+      overallPill.className = 'pill pill-error';
+      overallPill.textContent = 'REQUEST ERROR';
+      overallText.textContent = 'No backend URL set. Enter a backend URL and click Set, then run verification again.';
+      return;
+    }
+    btnRun.disabled = true;
+    overallPill.className = 'pill pill-busy';
+    overallPill.textContent = 'RUNNING';
+    overallText.textContent = 'Contacting ' + state.backendUrl + ' …';
+
+    const counts = { pass: 0, nodata: 0, error: 0 };
+    // results holds raw JSON of PASSing checks; dependent checks resolve
+    // their parameters (Ravens team id, game id) from it at run time.
+    const results = {};
+    const independent = CHECKS.filter(c => !c.depends);
+    const dependent = CHECKS.filter(c => c.depends);
+    const outcomes = await Promise.all(independent.map(c => runOne(c, state.backendUrl, results)));
+    for (const c of dependent) {
+      outcomes.push(await runOne(c, state.backendUrl, results));
+    }
+    outcomes.forEach(o => { counts[o] += 1; });
+
+    btnRun.disabled = false;
+    const total = CHECKS.length;
+    if (counts.pass === total) {
+      overallPill.className = 'pill pill-pass';
+      overallPill.textContent = 'PASS';
+    } else if (counts.error > 0) {
+      overallPill.className = 'pill pill-error';
+      overallPill.textContent = 'REQUEST ERROR';
+    } else {
+      overallPill.className = 'pill pill-nodata';
+      overallPill.textContent = 'NO DATA';
+    }
+    overallText.textContent = 'Run finished at ' + new Date().toLocaleTimeString() + ' — ' + total +
+      ' checks: ' + counts.pass + ' PASS, ' + counts.nodata + ' NO DATA, ' + counts.error + ' REQUEST ERROR.';
+  });
+
+  // ---- Init ---------------------------------------------------------------
+  buildCards();
+  const saved = storageGet();
+  state.backendUrl = saved || DEFAULT_BACKEND_URL;
+  input.value = state.backendUrl;
+  reflectBackend();
+  const initial = (location.hash || '#home').slice(1);
+  showPage(PAGES.indexOf(initial) !== -1 ? initial : 'home');
+
+  // Manual hash edits (address bar, shared links) must navigate too.
+  window.addEventListener('hashchange', function () {
+    const h = (location.hash || '#home').slice(1);
+    if (PAGES.indexOf(h) !== -1 && h !== currentPage) { showPage(h); }
+  });
+})();
+</script>
+</body>
+</html>
